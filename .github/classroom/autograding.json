@@ -28,7 +28,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "cat triple",
@@ -38,7 +38,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "cat error",
@@ -48,7 +48,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "echo multiple",
@@ -58,7 +58,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "echo newline multiple",
@@ -68,7 +68,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "echo newline simple",
@@ -78,7 +78,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "echo simple",
@@ -88,7 +88,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "echo spaces",
@@ -98,7 +98,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "pwd",
@@ -108,7 +108,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "touch access",
@@ -118,7 +118,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 10
     },
     {
       "name": "touch modified",
@@ -128,7 +128,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 10,
-      "points": null
+      "points": 10
     },
     {
       "name": "touch no create new",
@@ -138,7 +138,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 10
     },
     {
       "name": "touch simple",
@@ -148,7 +148,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "touch simple exists",
@@ -158,7 +158,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 10
     },
     {
       "name": "invalid chmod",
@@ -168,7 +168,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 10
     },
     {
       "name": "invalid command",
@@ -178,7 +178,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "invalid parameters",
@@ -188,7 +188,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "invalid parameters 2",
@@ -198,7 +198,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 10
     },
     {
       "name": "mkdir error",
@@ -208,7 +208,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "mkdir multiple",
@@ -218,7 +218,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "mkdir path",
@@ -228,7 +228,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "mkdir path multiple",
@@ -238,7 +238,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "mkdir simple",
@@ -248,7 +248,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "mkdir spaces",
@@ -258,7 +258,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "rmdir empty error",
@@ -268,7 +268,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "rmedir exists error",
@@ -278,7 +278,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "rmdir link",
@@ -288,7 +288,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "rmdir multiple",
@@ -298,7 +298,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "rmdir simple",
@@ -308,7 +308,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "mv dir",
@@ -318,7 +318,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "mv error",
@@ -328,7 +328,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "mv simple",
@@ -338,7 +338,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "ln error",
@@ -348,7 +348,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "ln s",
@@ -358,7 +358,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 10
     },
     {
       "name": "ln simple",
@@ -368,7 +368,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "ln symbolic",
@@ -378,7 +378,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 10
     },
     {
       "name": "ls all",
@@ -388,7 +388,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 20
     },
     {
       "name": "ls all re",
@@ -398,7 +398,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 25
     },
     {
       "name": "ls dir",
@@ -408,7 +408,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 10
     },
     {
       "name": "ls error",
@@ -418,7 +418,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "ls file",
@@ -428,7 +428,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "ls re",
@@ -438,7 +438,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 20
     },
     {
       "name": "ls simple",
@@ -448,7 +448,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 10
     },
     {
       "name": "cp error directory",
@@ -458,7 +458,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 10
     },
     {
       "name": "cp error file",
@@ -468,7 +468,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 5
     },
     {
       "name": "cp re",
@@ -478,7 +478,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 15
     },
     {
       "name": "cp re file",
@@ -488,7 +488,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 10
     },
     {
       "name": "cp rename directory",
@@ -498,7 +498,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 20
     },
     {
       "name": "cp simple file",
@@ -508,7 +508,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 10
     },
     {
       "name": "cp simple rename",
@@ -518,7 +518,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 10
     },
     {
       "name": "chmod add multiple",
@@ -528,7 +528,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 20
     },
     {
       "name": "chmod add one",
@@ -538,7 +538,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 15
     },
     {
       "name": "chmod all",
@@ -548,7 +548,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 5,
-      "points": null
+      "points": 20
     },
     {
       "name": "chmod del multiple",
