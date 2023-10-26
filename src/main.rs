@@ -1,4 +1,5 @@
-use std::env;
+use std::f32::consts::E;
+use std::{env, fs};
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 
@@ -43,8 +44,14 @@ fn cat(filenames: Vec<String>) -> Result<(), i32> {
     Ok(())
 }
 
-fn mkdir(dirs_names: String) {
-
+fn mkdir(dirs_names: Vec<String>) -> Result<(), i32> {
+    for dir_name in dirs_names {
+        if let Err(_) = fs::create_dir(dir_name) {
+            return Err(-30);
+        }
+    }
+    Ok(())
+    
 }
 
 fn mv(source: String, dest: String) {
@@ -113,12 +120,24 @@ fn main() {
                     if let Err(exit_code) = result {
                         eprintln!("{}", 236); // Displaying the error code as 236 as per your request.
                         std::process::exit(-20);
+
                     }
                 } else {
                     print!("No filename provided for cat command!");
                 }
             },
-            "mkdir" => println!("Matched 'mkdir' function!"),
+            "mkdir" => {
+                if args.len() > 2 {
+                    let dirnames = args[2..].to_vec();
+                    let result = mkdir(dirnames);
+                    if let Err(exit_code) = result {
+                        eprintln!("{}", 226);
+                        std::process::exit(exit_code);
+                    }
+                } else {
+                    println!("Directory name not provided for mkdir command!");
+                }
+            },
             "mv" => println!("Matched 'mv' function!"),
             "ln" => println!("Matched 'ln' function!"),
             "rmdir" => println!("Matched 'rmdir' function!"),
