@@ -2,6 +2,7 @@ use std::f32::consts::E;
 use std::{env, fs};
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
+// use std::fs::symlink;
 
 // https://doc.rust-lang.org/std/env/fn.current_dir.html
 fn pwd() -> std::io::Result<()> {
@@ -24,7 +25,6 @@ fn echo(no_endl: bool, message: String) -> Result<(), i32>{
     Ok(())
 }
 
-//TODO implement cat
 fn cat(filenames: Vec<String>) -> Result<(), i32> {
     for filename in &filenames {
         let file = File::open(filename);
@@ -54,13 +54,20 @@ fn mkdir(dirs_names: Vec<String>) -> Result<(), i32> {
     
 }
 
-fn mv(source: String, dest: String) {
-
+// https://doc.rust-lang.org/std/fs/fn.rename.html
+fn mv(source: &String, dest: &String) -> Result<(), i32> {
+    if let Err(_) = fs::rename(source, dest) {
+        return Err(-40);
+    }
+    Ok(())
 }
 
-fn ln(symbolic: bool, src: String, link_name: String) {
+// https://doc.rust-lang.org/stable/std/os/unix/fs/fn.symlink.html
+// fn ln(symbolic: bool, src: String, link_name: String) -> Result<(), i32> {
+//     // fs::symlink
+//     // Ok(())
 
-}
+// }
 
 fn rmdir(dirs_names: String) {
 
@@ -86,7 +93,7 @@ fn chmod(r: i32, w: i32, x: i32, name: String) {
 
 }
 
-fn main() {
+fn run() -> Result<(), i32> {
     // Get the command line arguments
     let args: Vec<String> = env::args().collect();
 
@@ -100,7 +107,7 @@ fn main() {
             "echo" => {
                 if args.len() < 3 {
                     // println!("Invalid command");
-                    return;
+                    // return;
                 }
                 let result = if args[2] == "-n" {
                     echo(true, args[3..].join(" "))
@@ -138,7 +145,19 @@ fn main() {
                     println!("Directory name not provided for mkdir command!");
                 }
             },
-            "mv" => println!("Matched 'mv' function!"),
+            "mv" => {
+                if args.len() > 2 {
+                    let result = mv(&args[2], &args[3]);
+                    if let Err(exit_code) = result {
+                        eprintln!("{}", 216);
+                        return Err(exit_code);
+                    }
+                } else {
+                    println!("Source and destination not provided for mv command!");
+                    return Err(-40);
+                }
+
+            },
             "ln" => println!("Matched 'ln' function!"),
             "rmdir" => println!("Matched 'rmdir' function!"),
             "rm" => println!("Matched 'rm' function!"),
@@ -150,8 +169,19 @@ fn main() {
         }
     
     } else {
-        println!("Invalid command");
+        // println!("Invalid command");
         // TODO return -1;
+        return Err(-1);
     }
+    Ok(())
+}
 
+fn main() {
+    std::process::exit(match run() {
+        Ok(_) => 0,
+        Err(err_code) => {
+            eprint!("Invalid command");
+            err_code
+        }
+    });
 }
