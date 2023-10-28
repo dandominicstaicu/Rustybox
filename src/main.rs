@@ -1,8 +1,6 @@
-use std::f32::consts::E;
 use std::{env, fs};
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
-// use std::fs::symlink;
 
 // https://doc.rust-lang.org/std/env/fn.current_dir.html
 fn pwd() -> std::io::Result<()> {
@@ -63,14 +61,26 @@ fn mv(source: &String, dest: &String) -> Result<(), i32> {
 }
 
 // https://doc.rust-lang.org/stable/std/os/unix/fs/fn.symlink.html
-// fn ln(symbolic: bool, src: String, link_name: String) -> Result<(), i32> {
-//     // fs::symlink
-//     // Ok(())
+fn ln(symbolic: bool, src: &str, link_name: &str ) -> Result<(), i32>{
+    if symbolic {
+        if let Err(_) = std::os::unix::fs::symlink(src, link_name) {
+            return Err(-50);
+        }
+    } else {
+        if let Err(_) = fs::hard_link(src, link_name) {
+            return Err(-50);
+        }
+    }
+    Ok(())
+}
 
-// }
-
-fn rmdir(dirs_names: String) {
-
+fn rmdir(dirs_names: Vec<String>) -> Result<(), i32> {
+    for dir_name in dirs_names {
+        if let Err(_) = fs::remove_dir(dir_name) {
+            return Err(-60);
+        }
+    }
+    Ok(())
 }
 
 fn rm(recursive: bool, dir: bool, names: String) {
@@ -158,8 +168,34 @@ fn run() -> Result<(), i32> {
                 }
 
             },
-            "ln" => println!("Matched 'ln' function!"),
-            "rmdir" => println!("Matched 'rmdir' function!"),
+            "ln" => {
+                if args.len() > 3 {
+                    let symbolic = args.contains(&String::from("-s")) || args.contains(&String::from("--symbolic"));
+                    let src_index = if symbolic { args.iter().position(|arg| arg != "-s" && arg != "--symbolic").unwrap() } else { 2 };
+                    let link_name_index = src_index + 1;
+                    let result = ln(symbolic, &args[src_index], &args[link_name_index]);
+                    if let Err(exit_code) = result {
+                        eprintln!("{}", 206);
+                        return Err(exit_code);
+                    }
+                } else {
+                    println!("Source and link name not provided for ln command!");
+                    return Err(-50);
+                }
+            }
+            "rmdir" => {
+                if args.len() > 2 {
+                    let dirnames = args[2..].to_vec();
+                    let result = rmdir(dirnames);
+                    if let Err(exit_code) = result {
+                        eprintln!("{}", 196);
+                        return Err(exit_code);
+                    }
+                } else {
+                    println!("Directory name not provided for rmdir command!");
+                    return Err(-60);
+                }
+            },
             "rm" => println!("Matched 'rm' function!"),
             "ls" => println!("Matched 'ls' function!"),
             "cp" => println!("Matched 'cp' function!"),
