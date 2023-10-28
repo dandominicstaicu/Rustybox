@@ -84,35 +84,6 @@ fn rmdir(dirs_names: Vec<String>) -> Result<(), i32> {
     Ok(())
 }
 
-// fn rm(recursive: bool, dir: bool, names: Vec<String>) -> Result<(), i32> {
-//     for name in names {
-//         let path = Path::new(&name);
-
-//         if !path.exists() {
-//             return Err(-70);
-//         }
-
-//         if path.is_file() {
-//             if let Err(_) = fs::remove_file(&path) {
-//                 return Err(-70);
-//             }
-//         } else if path.is_dir() {
-//             if recursive {
-//                 if let Err(_) = fs::remove_dir_all(&path) {
-//                     return Err(-70);
-//                 }
-//             } else if dir {
-//                 if let Err(_) = fs::remove_dir(&path) {
-//                     return Err(-70);
-//                 }
-//             } else {
-//                 return Err(-70);
-//             }
-//         }
-//     }
-//     Ok(())
-// }
-
 fn rm(recursive: bool, dir: bool, names: Vec<String>) -> Result<(), i32> {
     let mut errors = Vec::new();
 
@@ -229,13 +200,23 @@ fn run() -> Result<(), i32> {
             "ln" => {
                 if args.len() > 2 {
                     let symbolic = args.contains(&String::from("-s")) || args.contains(&String::from("--symbolic"));
-                    let src_index = if symbolic { args.iter().position(|arg| arg != "-s" && arg != "--symbolic").unwrap() } else { 2 };
-                    let link_name_index = src_index + 1;
-                    let result = ln(symbolic, &args[src_index], &args[link_name_index]);
+                    
+                    let start_index = 2 + symbolic as usize;
+                    if start_index >= args.len() {
+                        println!("Source and link name not provided for ln command!");
+                        return Err(-50);
+                    }
+                    
+                    let src_index = &args[start_index];
+                    let link_name = &args[start_index + 1];
+
+                    let result = ln(symbolic, src_index, link_name);
                     if let Err(exit_code) = result {
                         eprintln!("{}", 206);
                         return Err(exit_code);
                     }
+
+
                 } else {
                     println!("Source and link name not provided for ln command!");
                     return Err(-50);
