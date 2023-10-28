@@ -1,6 +1,7 @@
-use std::{env, fs};
+use std::{env, fs, result};
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
+use std::path::Path;
 
 // https://doc.rust-lang.org/std/env/fn.current_dir.html
 fn pwd() -> std::io::Result<()> {
@@ -83,9 +84,66 @@ fn rmdir(dirs_names: Vec<String>) -> Result<(), i32> {
     Ok(())
 }
 
-fn rm(recursive: bool, dir: bool, names: String) {
+// fn rm(recursive: bool, dir: bool, names: Vec<String>) -> Result<(), i32> {
+//     for name in names {
+//         let path = Path::new(&name);
 
+//         if !path.exists() {
+//             return Err(-70);
+//         }
+
+//         if path.is_file() {
+//             if let Err(_) = fs::remove_file(&path) {
+//                 return Err(-70);
+//             }
+//         } else if path.is_dir() {
+//             if recursive {
+//                 if let Err(_) = fs::remove_dir_all(&path) {
+//                     return Err(-70);
+//                 }
+//             } else if dir {
+//                 if let Err(_) = fs::remove_dir(&path) {
+//                     return Err(-70);
+//                 }
+//             } else {
+//                 return Err(-70);
+//             }
+//         }
+//     }
+//     Ok(())
+// }
+
+fn rm(recursive: bool, dir: bool, names: Vec<String>) -> Result<(), i32> {
+    let mut errors = Vec::new();
+
+    for name in names {
+        let path = Path::new(&name);
+        if path.is_file() {
+            if let Err(_) = fs::remove_file(&path) {
+                errors.push(-70);
+            }
+        } else if path.is_dir() {
+            if recursive {
+                if let Err(_) = fs::remove_dir_all(&path) {
+                    errors.push(-70);
+                }
+            } else if dir {
+                if let Err(_) = fs::remove_dir(&path) {
+                    errors.push(-70);
+                }
+            } else {
+                errors.push(-70);  // This is the expected error when neither `-d` nor `-r` is used
+            }
+        }
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(errors[0])
+    }
 }
+
 
 fn ls(all: bool, recursive: bool, dir: String) {
 
@@ -169,7 +227,7 @@ fn run() -> Result<(), i32> {
 
             },
             "ln" => {
-                if args.len() > 3 {
+                if args.len() > 2 {
                     let symbolic = args.contains(&String::from("-s")) || args.contains(&String::from("--symbolic"));
                     let src_index = if symbolic { args.iter().position(|arg| arg != "-s" && arg != "--symbolic").unwrap() } else { 2 };
                     let link_name_index = src_index + 1;
@@ -196,7 +254,23 @@ fn run() -> Result<(), i32> {
                     return Err(-60);
                 }
             },
-            "rm" => println!("Matched 'rm' function!"),
+            "rm" => {
+                let recursive = args.contains(&String::from("-R")) || args.contains(&String::from("--recursive"));
+                let dir = args.contains(&String::from("-d")) || args.contains(&String::from("--dir"));
+            
+                let start_idx = 2 + recursive as usize + dir as usize;
+                if start_idx >= args.len() {
+                    eprintln!("File name not provided for rm command!");
+                    return Err(-70);
+                }
+
+                let names = args[start_idx..].to_vec();
+                let result = rm(recursive, dir, names);
+                if let Err(exit_code) = result {
+                    eprintln!("{}", 186);
+                    return Err(exit_code);
+                }
+            },
             "ls" => println!("Matched 'ls' function!"),
             "cp" => println!("Matched 'cp' function!"),
             "touch" => println!("Matched 'touch' function!"),
