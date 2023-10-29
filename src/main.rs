@@ -256,8 +256,8 @@ fn run() -> Result<(), i32> {
 
                     let result = ln(symbolic, src_index, link_name);
                     if let Err(exit_code) = result {
-                        eprintln!("{}", 206);
-                        return Err(exit_code);
+                        // eprintln!("{}", 206);
+                        return Err(-1);
                     }
                 } else {
                     println!("Source and link name not provided for ln command!");
@@ -278,13 +278,14 @@ fn run() -> Result<(), i32> {
                 }
             },
             "rm" => {
-                let recursive = args.contains(&String::from("-R")) || args.contains(&String::from("--recursive"));
+                let recursive = args.contains(&String::from("-R")) || args.contains(&String::from("--recursive")) || args.contains(&String::from("-r"));
                 let dir = args.contains(&String::from("-d")) || args.contains(&String::from("--dir"));
             
                 let start_idx = 2 + recursive as usize + dir as usize;
+
                 if start_idx >= args.len() {
-                    eprintln!("File name not provided for rm command!");
-                    return Err(-70);
+                    // eprintln!("File name not provided for rm command!");
+                    return Err(-1);
                 }
 
                 let names = args[start_idx..].to_vec();
@@ -322,11 +323,12 @@ fn run() -> Result<(), i32> {
             },
             "touch" => println!("Matched 'touch' function!"),
             "chmod" => println!("Matched 'chmod' function!"),
-            _ => println!("Command not recognized!"),
+            _ => {
+                return Err(-1);
+            },
         }
 
     } else {
-        // println!("Invalid command");
         // TODO return -1;
         return Err(-1);
     }
@@ -337,7 +339,7 @@ fn main() {
     std::process::exit(match run() {
         Ok(_) => 0,
         Err(err_code) => {
-            eprint!("Invalid command");
+            println!("Invalid command");
             err_code
         }
     });
