@@ -1,7 +1,9 @@
-use std::{env, fs, result};
+use std::f32::consts::E;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
+use std::path::PathBuf;
+use std::{env, fs};
 
 // https://doc.rust-lang.org/std/env/fn.current_dir.html
 fn pwd() -> std::io::Result<()> {
@@ -103,7 +105,8 @@ fn rm(recursive: bool, dir: bool, names: Vec<String>) -> Result<(), i32> {
                     errors.push(-70);
                 }
             } else {
-                errors.push(-70);  // This is the expected error when neither `-d` nor `-r` is used
+                // This is the expected error when neither `-d` nor `-r` is used
+                errors.push(-70);
             }
         }
     }
@@ -116,12 +119,53 @@ fn rm(recursive: bool, dir: bool, names: Vec<String>) -> Result<(), i32> {
 }
 
 
-fn ls(all: bool, recursive: bool, dir: String) {
-
+fn ls(all: bool, recursive: bool, path: &Path) {
+    
 }
 
-fn cp(recursive: bool, src: String, dest: String) {
+fn cp(recursive: bool, src: String, dest: String) -> Result<(), i32> {
+    let src_path = Path::new(&src);
+    let dest_path = Path::new(&dest);
+    
+    if !src_path.exists() {
+        return Err(-90);
+    }
 
+    if src_path.is_file() {
+        // Copying a file
+        if let Err(_) = fs::copy(&src_path, &dest_path) {
+            return Err(-90);
+        }
+    } else if src_path.is_dir() && recursive {
+        // Copying a directory recursively
+        // Create the destination directory if it doesn't exist
+        if !dest_path.exists() {
+            if let Err(_) = fs::create_dir(&dest_path) {
+                return Err(-90);
+            }
+        }
+
+        for entry in fs::read_dir(&src_path).map_err(|_| -90)? {
+            let entry = entry.map_err(|_| -90)?;
+            let entry_path = entry.path();
+
+            let dest_child_path = dest_path.join(entry_path.file_name().ok_or(-90)?);
+
+            if entry_path.is_dir() {
+                // Recursively copy the subdirectory
+                cp(true, entry_path.to_string_lossy().to_string(), dest_child_path.to_string_lossy().to_string())?;
+            } else if entry_path.is_file() {
+                // Copy the file
+                if let Err(_) = fs::copy(&entry_path, &dest_child_path) {
+                    return Err(-90);
+                }
+            }
+        }
+    } else {
+        return Err(-90);
+    }
+
+    Ok(())
 }
 
 fn touch(date_time: bool, no_creat: bool, modify: bool, name: String) {
@@ -215,8 +259,6 @@ fn run() -> Result<(), i32> {
                         eprintln!("{}", 206);
                         return Err(exit_code);
                     }
-
-
                 } else {
                     println!("Source and link name not provided for ln command!");
                     return Err(-50);
@@ -252,13 +294,37 @@ fn run() -> Result<(), i32> {
                     return Err(exit_code);
                 }
             },
-            "ls" => println!("Matched 'ls' function!"),
-            "cp" => println!("Matched 'cp' function!"),
+            "ls" => {
+                
+            },
+            "cp" => {
+                let recursive = args.contains(&String::from("-R"))
+                    || args.contains(&String::from("-r"))
+                    || args.contains(&String::from("--recursive"));
+
+                let start_index = 2 + recursive as usize;
+
+                if start_index + 1 >= args.len() {
+                    eprintln!("Source and dest are not provided for cp command!");
+                    return Err(-90);
+                }
+
+                let src = &args[start_index];
+                let dest = &args[start_index + 1];
+
+                let result = cp(recursive, src.clone(), dest.clone());
+                if let Err(exit_code) = result {
+                    eprintln!("{}", 166);
+                    return Err(exit_code);
+                }
+                
+                
+            },
             "touch" => println!("Matched 'touch' function!"),
             "chmod" => println!("Matched 'chmod' function!"),
             _ => println!("Command not recognized!"),
         }
-    
+
     } else {
         // println!("Invalid command");
         // TODO return -1;
