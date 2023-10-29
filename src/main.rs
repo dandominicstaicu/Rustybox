@@ -3,7 +3,10 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
 use std::path::PathBuf;
-use std::{env, fs};
+// use std::{env, fs};
+use std::env;
+use std::fs;
+// use std::io;
 
 // https://doc.rust-lang.org/std/env/fn.current_dir.html
 fn pwd() -> std::io::Result<()> {
@@ -123,11 +126,9 @@ fn ls(all: bool, recursive: bool, path: &Path) {
     
 }
 
-
-
-fn cp(recursive: bool, src: String, dest: String) -> Result<(), i32> {
-    let src_path = Path::new(&src);
-    let mut dest_path = PathBuf::from(&dest);
+fn cp(recursive: bool, src: &str, dest: &str) -> Result<(), i32> {
+    let src_path = Path::new(src);
+    let mut dest_path = PathBuf::from(dest);
     
     if !src_path.exists() {
         eprintln!("src_path does not exist");
@@ -135,10 +136,18 @@ fn cp(recursive: bool, src: String, dest: String) -> Result<(), i32> {
     }
 
     if src_path.is_file() {
+        // If dest_path is a directory, append the filename to dest_path.
+        if dest_path.is_dir() {
+            dest_path.push(src_path.file_name().unwrap());
+        }
+        
         // Copying a file
-        if let Err(_) = fs::copy(&src_path, &dest_path) {
-            eprintln!("Error copying file");
-            return Err(-90);
+        match fs::copy(src, &dest_path) {
+            Ok(_) => {},
+            Err(e) => {
+                eprintln!("Error copying file: {}", e);
+                return Err(-90);
+            }
         }
     } else if src_path.is_dir() && recursive {
         if dest_path.is_dir() {
@@ -161,23 +170,22 @@ fn cp(recursive: bool, src: String, dest: String) -> Result<(), i32> {
 
             if entry_path.is_dir() {
                 // Recursively copy the subdirectory
-                cp(true, entry_path.to_string_lossy().to_string(), dest_child_path.to_string_lossy().to_string())?;
+                cp(true, entry_path.to_str().ok_or(-90)?, dest_child_path.to_str().ok_or(-90)?)?;
             } else if entry_path.is_file() {
                 // Copy the file
                 if let Err(_) = fs::copy(&entry_path, &dest_child_path) {
+                    eprintln!("Error copying file");
                     return Err(-90);
                 }
             }
         }
     } else {
+        eprintln!("Error copying directory");
         return Err(-90);
     }
 
     Ok(())
 }
-
-
-
 
 fn touch(date_time: bool, no_creat: bool, modify: bool, name: String) {
 
@@ -314,6 +322,8 @@ fn run() -> Result<(), i32> {
                     || args.contains(&String::from("-r"))
                     || args.contains(&String::from("--recursive"));
 
+                
+
                 let start_index = 2 + recursive as usize;
 
                 if start_index + 1 >= args.len() {
@@ -324,7 +334,16 @@ fn run() -> Result<(), i32> {
                 let src = &args[start_index];
                 let dest = &args[start_index + 1];
 
-                let result = cp(recursive, src.clone(), dest.clone());
+                // println!("recursive: {}", recursive);
+                // println!("src: {}", src);
+                // println!("dest: {}", dest);
+
+                // match cp(recursive, src, dest) {
+                //     Ok(_) => println!("File copied successfully!"),
+                //     Err(e) => eprintln!("Failed to copy the file: {}", e),
+                // }
+
+                let result = cp(recursive, src, dest);
                 if let Err(exit_code) = result {
                     eprintln!("result error: {}", 166);
                     return Err(exit_code);
