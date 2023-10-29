@@ -123,24 +123,32 @@ fn ls(all: bool, recursive: bool, path: &Path) {
     
 }
 
+
+
 fn cp(recursive: bool, src: String, dest: String) -> Result<(), i32> {
     let src_path = Path::new(&src);
-    let dest_path = Path::new(&dest);
+    let mut dest_path = PathBuf::from(&dest);
     
     if !src_path.exists() {
+        eprintln!("src_path does not exist");
         return Err(-90);
     }
 
     if src_path.is_file() {
         // Copying a file
         if let Err(_) = fs::copy(&src_path, &dest_path) {
+            eprintln!("Error copying file");
             return Err(-90);
         }
     } else if src_path.is_dir() && recursive {
-        // Copying a directory recursively
-        // Create the destination directory if it doesn't exist
+        if dest_path.is_dir() {
+            dest_path.push(src_path.file_name().ok_or(-90)?);
+        }
+
+        // Now, create the destination directory if it doesn't exist.
         if !dest_path.exists() {
-            if let Err(_) = fs::create_dir(&dest_path) {
+            if let Err(e) = fs::create_dir_all(&dest_path) { 
+                eprintln!("Error creating directory {}: {}", dest_path.display(), e);
                 return Err(-90);
             }
         }
@@ -167,6 +175,9 @@ fn cp(recursive: bool, src: String, dest: String) -> Result<(), i32> {
 
     Ok(())
 }
+
+
+
 
 fn touch(date_time: bool, no_creat: bool, modify: bool, name: String) {
 
@@ -315,7 +326,7 @@ fn run() -> Result<(), i32> {
 
                 let result = cp(recursive, src.clone(), dest.clone());
                 if let Err(exit_code) = result {
-                    eprintln!("{}", 166);
+                    eprintln!("result error: {}", 166);
                     return Err(exit_code);
                 }
                 
