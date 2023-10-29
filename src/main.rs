@@ -3,10 +3,10 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
 use std::path::PathBuf;
-// use std::{env, fs};
 use std::env;
 use std::fs;
-// use std::io;
+use chrono::{Local, DateTime, TimeZone};
+use std::os::unix::fs::PermissionsExt;
 
 // https://doc.rust-lang.org/std/env/fn.current_dir.html
 fn pwd() -> std::io::Result<()> {
@@ -94,6 +94,12 @@ fn rm(recursive: bool, dir: bool, names: Vec<String>) -> Result<(), i32> {
 
     for name in names {
         let path = Path::new(&name);
+
+        if !path.exists() {
+            errors.push(-70);
+            continue;
+        }
+
         if path.is_file() {
             if let Err(_) = fs::remove_file(&path) {
                 errors.push(-70);
@@ -117,7 +123,7 @@ fn rm(recursive: bool, dir: bool, names: Vec<String>) -> Result<(), i32> {
     if errors.is_empty() {
         Ok(())
     } else {
-        Err(errors[0])
+        Err(-70)
     }
 }
 
@@ -187,8 +193,41 @@ fn cp(recursive: bool, src: &str, dest: &str) -> Result<(), i32> {
     Ok(())
 }
 
-fn touch(date_time: bool, no_creat: bool, modify: bool, name: String) {
+fn touch(a: bool, no_creat: bool, m: bool, name: String) -> Result<(), i32> {
+    // The path to the file
+    let path = Path::new(&name);
 
+    // If the file exists, or we're allowed to create it
+    if path.exists() || !no_creat {
+        // If the file doesn't exist, create it.
+        if !path.exists() {
+            if let Err(_) = File::create(&path) {
+                eprintln!("Error creating the file: {}", name);
+                return Err(-100);
+            }
+        }
+
+        // On Unix-like systems, we can use the utimes syscall, but it's complex and not covered in this simplified example.
+        // For now, if 'a' or 'm' is specified, we simply update the permissions which modifies the metadata.
+        #[cfg(unix)]
+        {
+            if a || m {
+                eprintln!("a or m is specified");
+                let metadata = path.metadata().unwrap();
+                let mut permissions = metadata.permissions();
+                let current_mode = permissions.mode();
+                permissions.set_mode(current_mode);
+                fs::set_permissions(&path, permissions).unwrap();
+            }
+        }
+
+        Ok(())
+    } else if no_creat {
+        Err(0)
+    } else{
+        eprintln!("File does not exist, and no-create option is set.");
+        Err(-100)
+    }
 }
 
 fn chmod(r: i32, w: i32, x: i32, name: String) {
@@ -276,7 +315,7 @@ fn run() -> Result<(), i32> {
                     let result = ln(symbolic, src_index, link_name);
                     if let Err(exit_code) = result {
                         // eprintln!("{}", 206);
-                        return Err(-1);
+                        return Err(-50);
                     }
                 } else {
                     println!("Source and link name not provided for ln command!");
@@ -304,7 +343,7 @@ fn run() -> Result<(), i32> {
 
                 if start_idx >= args.len() {
                     // eprintln!("File name not provided for rm command!");
-                    return Err(-1);
+                    return Err(-70);
                 }
 
                 let names = args[start_idx..].to_vec();
@@ -334,15 +373,6 @@ fn run() -> Result<(), i32> {
                 let src = &args[start_index];
                 let dest = &args[start_index + 1];
 
-                // println!("recursive: {}", recursive);
-                // println!("src: {}", src);
-                // println!("dest: {}", dest);
-
-                // match cp(recursive, src, dest) {
-                //     Ok(_) => println!("File copied successfully!"),
-                //     Err(e) => eprintln!("Failed to copy the file: {}", e),
-                // }
-
                 let result = cp(recursive, src, dest);
                 if let Err(exit_code) = result {
                     eprintln!("result error: {}", 166);
@@ -351,7 +381,24 @@ fn run() -> Result<(), i32> {
                 
                 
             },
-            "touch" => println!("Matched 'touch' function!"),
+            "touch" => {
+                let a = args.contains(&String::from("-a"));
+                let no_creat = args.contains(&String::from("-c")) || args.contains(&String::from("--no-creat"));
+                let m = args.contains(&String::from("-m"));
+
+                let start_idx = 2 + a as usize + no_creat as usize + m as usize;
+                if start_idx >= args.len() {
+                    eprintln!("File name not provided for touch command!");
+                    return Err(-1);
+                }
+
+                let file_name = &args[start_idx];
+                let result = touch(a, no_creat, m, file_name.to_string());
+                if let Err(exit_code) = result {
+                    eprintln!("{}", 156);
+                    return Err(exit_code);
+                }
+            },
             "chmod" => println!("Matched 'chmod' function!"),
             _ => {
                 return Err(-1);
