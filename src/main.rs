@@ -1,12 +1,10 @@
-use std::f32::consts::E;
-use std::fs::File;
-use std::io::{self, BufRead, BufReader};
-use std::path::Path;
-use std::path::PathBuf;
+use std::io::{BufRead, BufReader, Write};
+use std::path::{Path, PathBuf};
 use std::env;
 use std::fs;
-use chrono::{Local, DateTime, TimeZone};
-use std::os::unix::fs::PermissionsExt;
+use std::fs::{OpenOptions, File};
+use std::time::SystemTime;
+use std::io::prelude::*;
 
 // https://doc.rust-lang.org/std/env/fn.current_dir.html
 fn pwd() -> std::io::Result<()> {
@@ -207,18 +205,18 @@ fn touch(a: bool, no_creat: bool, m: bool, name: String) -> Result<(), i32> {
             }
         }
 
-        // On Unix-like systems, we can use the utimes syscall, but it's complex and not covered in this simplified example.
-        // For now, if 'a' or 'm' is specified, we simply update the permissions which modifies the metadata.
-        #[cfg(unix)]
-        {
-            if a || m {
-                eprintln!("a or m is specified");
-                let metadata = path.metadata().unwrap();
-                let mut permissions = metadata.permissions();
-                let current_mode = permissions.mode();
-                permissions.set_mode(current_mode);
-                fs::set_permissions(&path, permissions).unwrap();
+        let mut file = match OpenOptions::new().append(true).create(true).open(&path) {
+            Ok(file) => file,
+            Err(e) => {
+                println!("failed to open or create the file: {}", e);
+                return Err(-100);
             }
+        };
+
+        if let Err(e) = file.write_all(b" ") {
+            println!("Failed to write to the file: {}", e);
+        } else {
+            println!("Space written to the file successfully!");
         }
 
         Ok(())
@@ -258,7 +256,8 @@ fn run() -> Result<(), i32> {
 
                 if let Err(exit_code) = result {
                     eprintln!("{}", 246);
-                    std::process::exit(exit_code);
+                    // std::process::exit(exit_code);
+                    return Err(-10);
                 }
             },
             "cat" => {
@@ -267,7 +266,8 @@ fn run() -> Result<(), i32> {
                     let result = cat(filenames);
                     if let Err(exit_code) = result {
                         eprintln!("{}", 236); // Displaying the error code as 236 as per your request.
-                        std::process::exit(-20);
+                        // std::process::exit(-20);
+                        return Err(-20);
 
                     }
                 } else {
@@ -280,7 +280,8 @@ fn run() -> Result<(), i32> {
                     let result = mkdir(dirnames);
                     if let Err(exit_code) = result {
                         eprintln!("{}", 226);
-                        std::process::exit(exit_code);
+                        // std::process::exit(exit_code);
+                        return Err(-30);
                     }
                 } else {
                     println!("Directory name not provided for mkdir command!");
