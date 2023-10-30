@@ -1,11 +1,9 @@
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Write, Read, self};
 use std::path::{Path, PathBuf};
 use std::env;
 use std::fs;
 use std::fs::{OpenOptions, File};
-use std::time::SystemTime;
-use std::io::prelude::*;
-use std::{thread, time};
+
 
 // https://doc.rust-lang.org/std/env/fn.current_dir.html
 fn pwd() -> std::io::Result<()> {
@@ -197,6 +195,10 @@ fn touch(a: bool, no_creat: bool, m: bool, name: String) -> Result<(), i32> {
 
     // If the file exists, or we're allowed to create it
     if path.exists() || !no_creat {
+        let mut edit_a_m: bool = false;
+        if path.exists() {
+            edit_a_m = true;
+        }
         // If the file doesn't exist, create it.
         if !path.exists() {
             if let Err(_) = File::create(&path) {
@@ -205,7 +207,27 @@ fn touch(a: bool, no_creat: bool, m: bool, name: String) -> Result<(), i32> {
             }
         }
 
-        if a || m {
+        
+
+        let mut file = match File::open(&path) {
+            Ok(file) => file,
+            Err(e) => {
+                eprintln!("failed to open the file: {}", e);
+                return Err(-100);
+            }
+        };
+
+        if a || edit_a_m {
+            
+            let mut buffer = Vec::new();
+
+            if let Err(e) = file.read_to_end(&mut buffer) {
+                eprintln!("failed to read to end");
+            }
+
+        }
+
+        if m || edit_a_m {
             let mut file = match OpenOptions::new().append(true).create(true).open(&path) {
                 Ok(file) => file,
                 Err(e) => {
@@ -214,32 +236,15 @@ fn touch(a: bool, no_creat: bool, m: bool, name: String) -> Result<(), i32> {
                 }
             };
 
-            // only access edit
-            if a && !m {
-                // no clue yet
+            if let Err(e) = file.write_all(b" ") {
+                println!("Failed to write to the file: {}", e);
+            } else {
+                println!("Space written to the file successfully!");
             }
-
-            if !a && m { //works for modify
-                if let Err(e) = file.write_all(b" ") {
-                    println!("Failed to write to the file: {}", e);
-                } else {
-                    // println!("Space written to the file successfully!");
-                }
-            }
-
-            if a && m {
-                // let mut content = String::new();
-                // let _ = file.read_to_string(&mut content);
-
-                if let Err(e) = file.write_all(b" ") {
-                    println!("Failed to write to the file: {}", e);
-                } else {
-                    // println!("Space written to the file successfully!");
-                }
-            }
-
-            drop(file);
         }
+            
+        drop(file);
+        
 
         Ok(())
     } else if no_creat {
