@@ -124,45 +124,37 @@ fn rm(recursive: bool, dir: bool, names: Vec<String>) -> Result<(), i32> {
     }
 }
 
-fn ls(all: bool, recursive: bool, path: &Path, base_dir: &Path) -> Result<(), i32> {
+fn ls(all: bool, recursive: bool, path: &Path, base_dir: &Path, is_base_directory: bool) -> Result<(), i32> {
     if path.is_dir() {
-        // If '-a' flag is set, print the '.' and '..' directories
-        if all {
+        // If '-a' flag is set, print the '.' and '..' with paths for all directories except the base directory.
+        if all && !is_base_directory {
+            let stripped_path = path.strip_prefix(base_dir).unwrap_or(path);
+            println!("{}/.", stripped_path.display());
+            println!("{}/..", stripped_path.display());
+        }
+
+        if all && is_base_directory {
             println!(".");
             println!("..");
         }
 
-        let entries = match fs::read_dir(path) {
-            Ok(e) => e,
-            Err(_) => {
-                eprintln!("Failed to read directory: {}", path.display());
-                return Err(-80);
-            }
-        };
+        for entry in fs::read_dir(path).map_err(|_| -80)? {
+            let entry_path = entry.map_err(|_| -80)?.path();
+            let file_name = entry_path.file_name().unwrap().to_str().ok_or(-80)?;
 
-        for entry in entries {
-            let entry = entry.map_err(|_| {
-                eprintln!("Failed to read directory entry in: {}", path.display());
-                -80
-            })?;
-            let file_name = entry.file_name().into_string().map_err(|_| -80)?;
-        
             // Skip hidden files/directories if '-a' flag is not set
-            if !all && file_name.starts_with('.') {
+            if !all && (file_name.starts_with('.') || file_name == "." || file_name == "..") {
                 continue;
             }
-        
-            // Display relative path from base_dir
-            let entry_path = entry.path();
+
             let rel_path = entry_path.strip_prefix(base_dir).unwrap_or(&entry_path);
             println!("{}", rel_path.display());
         
             if recursive && entry_path.is_dir() {
-                ls(all, recursive, &entry_path, base_dir)?;
+                ls(all, recursive, &entry_path, base_dir, false)?;
             }
         }
     } else if path.is_file() {
-        // Display relative path from base_dir for files
         let rel_path = path.strip_prefix(base_dir).unwrap_or(path);
         println!("{}", rel_path.display());
     } else {
@@ -172,7 +164,6 @@ fn ls(all: bool, recursive: bool, path: &Path, base_dir: &Path) -> Result<(), i3
 
     Ok(())
 }
-
 
 
 fn cp(recursive: bool, src: &str, dest: &str) -> Result<(), i32> {
@@ -461,7 +452,7 @@ fn run() -> Result<(), i32> {
                     Path::new("/")
                 };
             
-                let result = ls(all, recursive, &path, &base);
+                let result = ls(all, recursive, &path, &base, true);
                 if let Err(exit_code) = result {
                     eprintln!("{}", 176);
                     return Err(exit_code);
