@@ -124,9 +124,7 @@ fn rm(recursive: bool, dir: bool, names: Vec<String>) -> Result<(), i32> {
     }
 }
 
-fn ls(all: bool, recursive: bool, path: impl AsRef<Path>) -> Result<(), i32> {
-    let path = path.as_ref();
-
+fn ls(all: bool, recursive: bool, path: &Path, base_dir: &Path) -> Result<(), i32> {
     if path.is_dir() {
         // If '-a' flag is set, print the '.' and '..' directories
         if all {
@@ -148,21 +146,25 @@ fn ls(all: bool, recursive: bool, path: impl AsRef<Path>) -> Result<(), i32> {
                 -80
             })?;
             let file_name = entry.file_name().into_string().map_err(|_| -80)?;
-
+        
             // Skip hidden files/directories if '-a' flag is not set
             if !all && file_name.starts_with('.') {
                 continue;
             }
-
-            println!("{}", file_name);
-
-            if recursive && entry.path().is_dir() {
-                println!("{}:", entry.path().display());
-                ls(all, recursive, &entry.path())?;
+        
+            // Display relative path from base_dir
+            let entry_path = entry.path();
+            let rel_path = entry_path.strip_prefix(base_dir).unwrap_or(&entry_path);
+            println!("{}", rel_path.display());
+        
+            if recursive && entry_path.is_dir() {
+                ls(all, recursive, &entry_path, base_dir)?;
             }
         }
     } else if path.is_file() {
-        println!("{}", path.display());
+        // Display relative path from base_dir for files
+        let rel_path = path.strip_prefix(base_dir).unwrap_or(path);
+        println!("{}", rel_path.display());
     } else {
         eprintln!("Path does not exist: {}", path.display());
         return Err(-80);
@@ -170,6 +172,8 @@ fn ls(all: bool, recursive: bool, path: impl AsRef<Path>) -> Result<(), i32> {
 
     Ok(())
 }
+
+
 
 fn cp(recursive: bool, src: &str, dest: &str) -> Result<(), i32> {
     let src_path = Path::new(src);
@@ -398,7 +402,8 @@ fn run() -> Result<(), i32> {
                     println!("Source and link name not provided for ln command!");
                     return Err(-50);
                 }
-            }
+            },
+
             "rmdir" => {
                 if args.len() > 2 {
                     let dirnames = args[2..].to_vec();
@@ -433,29 +438,36 @@ fn run() -> Result<(), i32> {
             "ls" => {
                 let all = args.contains(&String::from("-a")) || args.contains(&String::from("-all"));
                 let recursive = args.contains(&String::from("-R")) || args.contains(&String::from("--recursive"));
-                
+            
                 let mut path_idx = 2;
                 if all {
                     path_idx += 1;
                 }
-
+            
                 if recursive {
                     path_idx += 1;
                 }
-
-                let path = if path_idx < args.len() {
+            
+                let path_str = if path_idx < args.len() {
                     &args[path_idx]
                 } else {
                     "."
                 };
-
-                let result = ls(all, recursive, Path::new(path));
+            
+                let path = Path::new(path_str);
+                let base = if path.is_dir() {
+                    path
+                } else {
+                    Path::new("/")
+                };
+            
+                let result = ls(all, recursive, &path, &base);
                 if let Err(exit_code) = result {
                     eprintln!("{}", 176);
                     return Err(exit_code);
                 }
-
             },
+                
             "cp" => {
                 let recursive = args.contains(&String::from("-R"))
                     || args.contains(&String::from("-r"))
