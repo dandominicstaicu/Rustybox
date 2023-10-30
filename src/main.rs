@@ -5,6 +5,7 @@ use std::fs;
 use std::fs::{OpenOptions, File};
 use std::time::SystemTime;
 use std::io::prelude::*;
+use std::{thread, time};
 
 // https://doc.rust-lang.org/std/env/fn.current_dir.html
 fn pwd() -> std::io::Result<()> {
@@ -125,7 +126,6 @@ fn rm(recursive: bool, dir: bool, names: Vec<String>) -> Result<(), i32> {
     }
 }
 
-
 fn ls(all: bool, recursive: bool, path: &Path) {
     
 }
@@ -205,18 +205,40 @@ fn touch(a: bool, no_creat: bool, m: bool, name: String) -> Result<(), i32> {
             }
         }
 
-        let mut file = match OpenOptions::new().append(true).create(true).open(&path) {
-            Ok(file) => file,
-            Err(e) => {
-                println!("failed to open or create the file: {}", e);
-                return Err(-100);
-            }
-        };
+        if a || m {
+            let mut file = match OpenOptions::new().append(true).create(true).open(&path) {
+                Ok(file) => file,
+                Err(e) => {
+                    println!("failed to open or create the file: {}", e);
+                    return Err(-100);
+                }
+            };
 
-        if let Err(e) = file.write_all(b" ") {
-            println!("Failed to write to the file: {}", e);
-        } else {
-            println!("Space written to the file successfully!");
+            // only access edit
+            if a && !m {
+                // no clue yet
+            }
+
+            if !a && m { //works for modify
+                if let Err(e) = file.write_all(b" ") {
+                    println!("Failed to write to the file: {}", e);
+                } else {
+                    // println!("Space written to the file successfully!");
+                }
+            }
+
+            if a && m {
+                // let mut content = String::new();
+                // let _ = file.read_to_string(&mut content);
+
+                if let Err(e) = file.write_all(b" ") {
+                    println!("Failed to write to the file: {}", e);
+                } else {
+                    // println!("Space written to the file successfully!");
+                }
+            }
+
+            drop(file);
         }
 
         Ok(())
@@ -303,7 +325,13 @@ fn run() -> Result<(), i32> {
             "ln" => {
                 if args.len() > 2 {
                     let symbolic = args.contains(&String::from("-s")) || args.contains(&String::from("--symbolic"));
-                    
+                    let wrong = args.contains(&String::from("-a"));
+
+                    if wrong {
+                        // println!("Invalid option for ln command!");
+                        return Err(-1);
+                    }
+
                     let start_index = 2 + symbolic as usize;
                     if start_index >= args.len() {
                         println!("Source and link name not provided for ln command!");
@@ -344,7 +372,7 @@ fn run() -> Result<(), i32> {
 
                 if start_idx >= args.len() {
                     // eprintln!("File name not provided for rm command!");
-                    return Err(-70);
+                    return Err(-1); //-70
                 }
 
                 let names = args[start_idx..].to_vec();
