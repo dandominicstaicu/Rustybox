@@ -124,8 +124,51 @@ fn rm(recursive: bool, dir: bool, names: Vec<String>) -> Result<(), i32> {
     }
 }
 
-fn ls(all: bool, recursive: bool, path: &Path) {
-    
+fn ls(all: bool, recursive: bool, path: impl AsRef<Path>) -> Result<(), i32> {
+    let path = path.as_ref();
+
+    if path.is_dir() {
+        // If '-a' flag is set, print the '.' and '..' directories
+        if all {
+            println!(".");
+            println!("..");
+        }
+
+        let entries = match fs::read_dir(path) {
+            Ok(e) => e,
+            Err(_) => {
+                eprintln!("Failed to read directory: {}", path.display());
+                return Err(-80);
+            }
+        };
+
+        for entry in entries {
+            let entry = entry.map_err(|_| {
+                eprintln!("Failed to read directory entry in: {}", path.display());
+                -80
+            })?;
+            let file_name = entry.file_name().into_string().map_err(|_| -80)?;
+
+            // Skip hidden files/directories if '-a' flag is not set
+            if !all && file_name.starts_with('.') {
+                continue;
+            }
+
+            println!("{}", file_name);
+
+            if recursive && entry.path().is_dir() {
+                println!("{}:", entry.path().display());
+                ls(all, recursive, &entry.path())?;
+            }
+        }
+    } else if path.is_file() {
+        println!("{}", path.display());
+    } else {
+        eprintln!("Path does not exist: {}", path.display());
+        return Err(-80);
+    }
+
+    Ok(())
 }
 
 fn cp(recursive: bool, src: &str, dest: &str) -> Result<(), i32> {
@@ -388,7 +431,30 @@ fn run() -> Result<(), i32> {
                 }
             },
             "ls" => {
+                let all = args.contains(&String::from("-a")) || args.contains(&String::from("-all"));
+                let recursive = args.contains(&String::from("-R")) || args.contains(&String::from("--recursive"));
                 
+                let mut path_idx = 2;
+                if all {
+                    path_idx += 1;
+                }
+
+                if recursive {
+                    path_idx += 1;
+                }
+
+                let path = if path_idx < args.len() {
+                    &args[path_idx]
+                } else {
+                    "."
+                };
+
+                let result = ls(all, recursive, Path::new(path));
+                if let Err(exit_code) = result {
+                    eprintln!("{}", 176);
+                    return Err(exit_code);
+                }
+
             },
             "cp" => {
                 let recursive = args.contains(&String::from("-R"))
