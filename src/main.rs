@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::env;
 use std::fs;
 use std::fs::{OpenOptions, File};
-
+use std::os::unix::fs::PermissionsExt;
 
 // https://doc.rust-lang.org/std/env/fn.current_dir.html
 fn pwd() -> std::io::Result<()> {
@@ -293,9 +293,80 @@ fn touch(a: bool, no_creat: bool, m: bool, name: String) -> Result<(), i32> {
     }
 }
 
-fn chmod(r: i32, w: i32, x: i32, name: String) {
+fn chmod(permission: &str, name: String) -> Result<(), i32> {
+    let path = Path::new(&name);
+    if !path.exists() {
+        eprintln!("Path does not exist");
+        return Err(-25);
+    }
 
+    // Check if permission is numeric
+    if let Ok(mode) = u32::from_str_radix(permission, 8) {
+        fs::set_permissions(&path, fs::Permissions::from_mode(mode)).map_err(|_| -25)?;
+    } else {
+        // Symbolic permission
+        let current_metadata = fs::metadata(&path).map_err(|_| -25)?;
+        let mut current_mode = current_metadata.permissions().mode();
+
+        for chunk in permission.split_whitespace() {
+            if chunk.len() < 3 {
+                return Err(-1);  // Return -1 for invalid format
+            }
+            let operation_idx = chunk.find(|c| c == '+' || c == '-').unwrap_or(chunk.len());
+            let entities = &chunk[..operation_idx];
+            let operation = &chunk[operation_idx..operation_idx+1];
+            let perms = &chunk[operation_idx+1..];
+        
+            for entity in entities.chars() {
+                for perm in perms.chars() {
+                    let mask = match perm {
+                        'r' => 0o444,
+                        'w' => 0o222,
+                        'x' => 0o111,
+                        _ => return Err(-1),  // Return -1 for invalid permission
+                    };
+        
+                    match entity {
+                        'u' => {
+                            match operation {
+                                "+" => current_mode |= mask & 0o700,
+                                "-" => current_mode &= !(mask & 0o700),
+                                _ => return Err(-25),
+                            }
+                        }
+                        'g' => {
+                            match operation {
+                                "+" => current_mode |= mask & 0o070,
+                                "-" => current_mode &= !(mask & 0o070),
+                                _ => return Err(-25),
+                            }
+                        }
+                        'o' => {
+                            match operation {
+                                "+" => current_mode |= mask & 0o007,
+                                "-" => current_mode &= !(mask & 0o007),
+                                _ => return Err(-25),
+                            }
+                        }
+                        'a' => {
+                            match operation {
+                                "+" => current_mode |= mask,
+                                "-" => current_mode &= !mask,
+                                _ => return Err(-25),
+                            }
+                        }
+                        _ => return Err(-25),
+                    }
+                }
+            }
+        }
+
+
+        fs::set_permissions(&path, fs::Permissions::from_mode(current_mode)).map_err(|_| -25)?;
+    }
+    Ok(())
 }
+
 
 fn run() -> Result<(), i32> {
     // Get the command line arguments
@@ -345,7 +416,7 @@ fn run() -> Result<(), i32> {
                     let result = mkdir(dirnames);
                     if let Err(exit_code) = result {
                         eprintln!("{}", 226);
-                        // std::process::exit(exit_code);
+
                         return Err(-30);
                     }
                 } else {
@@ -416,7 +487,7 @@ fn run() -> Result<(), i32> {
 
                 if start_idx >= args.len() {
                     // eprintln!("File name not provided for rm command!");
-                    return Err(-1); //-70
+                    return Err(-1);
                 }
 
                 let names = args[start_idx..].to_vec();
@@ -502,14 +573,32 @@ fn run() -> Result<(), i32> {
                     return Err(exit_code);
                 }
             },
-            "chmod" => println!("Matched 'chmod' function!"),
+            "chmod" => {
+                // Validate flags for chmod
+                if args[2].starts_with("-") {
+                    return Err(-1);
+                }
+                
+                if args.len() > 3 {
+                    let result = chmod(&args[2], args[3].clone());
+                    if let Err(exit_code) = result {
+                        if exit_code == -1 {
+                            eprintln!("Invalid chmod command!");
+                        } else {
+                            eprintln!("{}", 231);
+                        }
+                        return Err(exit_code);
+                    }
+                } else {
+                    return Err(-1);  // Return -1 for invalid number of args
+                }
+            },
             _ => {
                 return Err(-1);
             },
         }
 
     } else {
-        // TODO return -1;
         return Err(-1);
     }
     Ok(())
