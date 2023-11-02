@@ -1,11 +1,10 @@
-use std::io::{BufRead, BufReader, Write, Read, self};
+use std::io::{BufRead, BufReader, Write, Read};
 use std::path::{Path, PathBuf};
 use std::env;
 use std::fs;
 use std::fs::{OpenOptions, File};
 use std::os::unix::fs::PermissionsExt;
 
-// https://doc.rust-lang.org/std/env/fn.current_dir.html
 fn pwd() -> std::io::Result<()> {
     let path = env::current_dir()?;
     println!("{}", path.display());
@@ -52,10 +51,8 @@ fn mkdir(dirs_names: Vec<String>) -> Result<(), i32> {
         }
     }
     Ok(())
-    
 }
 
-// https://doc.rust-lang.org/std/fs/fn.rename.html
 fn mv(source: &String, dest: &String) -> Result<(), i32> {
     if let Err(_) = fs::rename(source, dest) {
         return Err(-40);
@@ -63,7 +60,6 @@ fn mv(source: &String, dest: &String) -> Result<(), i32> {
     Ok(())
 }
 
-// https://doc.rust-lang.org/stable/std/os/unix/fs/fn.symlink.html
 fn ln(symbolic: bool, src: &str, link_name: &str ) -> Result<(), i32>{
     if symbolic {
         if let Err(_) = std::os::unix::fs::symlink(src, link_name) {
@@ -111,7 +107,7 @@ fn rm(recursive: bool, dir: bool, names: Vec<String>) -> Result<(), i32> {
                     errors.push(-70);
                 }
             } else {
-                // This is the expected error when neither `-d` nor `-r` is used
+                // When neither `-d` nor `-r` is used for dirs
                 errors.push(-70);
             }
         }
@@ -124,37 +120,41 @@ fn rm(recursive: bool, dir: bool, names: Vec<String>) -> Result<(), i32> {
     }
 }
 
-fn ls(all: bool, recursive: bool, path: &Path, base_dir: &Path, is_base_directory: bool) -> Result<(), i32> {
+fn ls(all: bool, recursive: bool, path: &Path, base_dir: &Path) -> Result<(), i32> {
     if path.is_dir() {
-        // If '-a' flag is set, print the '.' and '..' with paths for all directories except the base directory.
-        if all && !is_base_directory {
-            let stripped_path = path.strip_prefix(base_dir).unwrap_or(path);
-            println!("{}/.", stripped_path.display());
-            println!("{}/..", stripped_path.display());
-        }
-
-        if all && is_base_directory {
+        // If '-a' flag is set, print the '.' and '..' for all directories
+        if all {
             println!(".");
             println!("..");
         }
 
+        // print the base folder if recursive
+        if recursive {
+            println!("{}:", path.display());
+        }
+
+        // for each file/dir inside the given directory
         for entry in fs::read_dir(path).map_err(|_| -80)? {
             let entry_path = entry.map_err(|_| -80)?.path();
             let file_name = entry_path.file_name().unwrap().to_str().ok_or(-80)?;
 
             // Skip hidden files/directories if '-a' flag is not set
-            if !all && (file_name.starts_with('.') || file_name == "." || file_name == "..") {
+            if !all && file_name.starts_with('.') {
                 continue;
             }
 
-            let rel_path = entry_path.strip_prefix(base_dir).unwrap_or(&entry_path);
-            println!("{}", rel_path.display());
-        
+            // get and print the file name
+            let file_name = entry_path.file_name().unwrap().to_str().ok_or(-80)?;
+            println!("{}", file_name);
+
+            // if it is a dir, print it's path and it's content
             if recursive && entry_path.is_dir() {
-                ls(all, recursive, &entry_path, base_dir, false)?;
+                println!("{}:", entry_path.display());
+                ls(all, recursive, &entry_path, base_dir)?;
             }
         }
     } else if path.is_file() {
+        // print the name of the file
         let rel_path = path.strip_prefix(base_dir).unwrap_or(path);
         println!("{}", rel_path.display());
     } else {
@@ -164,7 +164,6 @@ fn ls(all: bool, recursive: bool, path: &Path, base_dir: &Path, is_base_director
 
     Ok(())
 }
-
 
 fn cp(recursive: bool, src: &str, dest: &str) -> Result<(), i32> {
     let src_path = Path::new(src);
@@ -191,7 +190,7 @@ fn cp(recursive: bool, src: &str, dest: &str) -> Result<(), i32> {
         }
     } else if src_path.is_dir() && recursive {
         if dest_path.is_dir() {
-            dest_path.push(src_path.file_name().ok_or(-90)?);
+            dest_path.push(src_path.file_name().ok_or(-90)?); 
         }
 
         // Now, create the destination directory if it doesn't exist.
@@ -202,11 +201,11 @@ fn cp(recursive: bool, src: &str, dest: &str) -> Result<(), i32> {
             }
         }
 
-        for entry in fs::read_dir(&src_path).map_err(|_| -90)? {
-            let entry = entry.map_err(|_| -90)?;
-            let entry_path = entry.path();
+        for entry in fs::read_dir(&src_path).map_err(|_| -90)? { // Read the contents of the directory
+            let entry = entry.map_err(|_| -90)?; // Unwrap the entry
+            let entry_path = entry.path(); // Get the path of the entry
 
-            let dest_child_path = dest_path.join(entry_path.file_name().ok_or(-90)?);
+            let dest_child_path = dest_path.join(entry_path.file_name().ok_or(-90)?); // Get the path of the child in the destination directory
 
             if entry_path.is_dir() {
                 // Recursively copy the subdirectory
@@ -245,8 +244,6 @@ fn touch(a: bool, no_creat: bool, m: bool, name: String) -> Result<(), i32> {
             }
         }
 
-        
-
         let mut file = match File::open(&path) {
             Ok(file) => file,
             Err(e) => {
@@ -259,7 +256,7 @@ fn touch(a: bool, no_creat: bool, m: bool, name: String) -> Result<(), i32> {
             
             let mut buffer = Vec::new();
 
-            if let Err(e) = file.read_to_end(&mut buffer) {
+            if let Err(_) = file.read_to_end(&mut buffer) {
                 eprintln!("failed to read to end");
             }
 
@@ -282,7 +279,6 @@ fn touch(a: bool, no_creat: bool, m: bool, name: String) -> Result<(), i32> {
         }
             
         drop(file);
-        
 
         Ok(())
     } else if no_creat {
@@ -325,7 +321,7 @@ fn chmod(permission: &str, name: String) -> Result<(), i32> {
                         'x' => 0o111,
                         _ => return Err(-1),  // Return -1 for invalid permission
                     };
-        
+
                     match entity {
                         'u' => {
                             match operation {
@@ -379,30 +375,28 @@ fn run() -> Result<(), i32> {
     
         match command {
             "pwd" => pwd().expect("Error executing pwd command!"),
-            "echo" => {
-                if args.len() < 3 {
-                    // println!("Invalid command");
-                    // return;
-                }
-                let result = if args[2] == "-n" {
-                    echo(true, args[3..].join(" "))
-                } else {
-                    echo(false, args[2..].join(" "))
-                };
 
-                if let Err(exit_code) = result {
-                    eprintln!("{}", 246);
-                    // std::process::exit(exit_code);
-                    return Err(-10);
+            "echo" => {
+                if args.len() > 1 {
+                    let result = if args[2] == "-n" {
+                        echo(true, args[3..].join(" "))
+                    } else {
+                        echo(false, args[2..].join(" "))
+                    };
+
+                    if let Err(_) = result {
+                        eprintln!("{}", 246);
+                        return Err(-10);
+                    }
                 }
             },
+
             "cat" => {
                 if args.len() > 2 {
                     let filenames = args[2..].to_vec();
                     let result = cat(filenames);
-                    if let Err(exit_code) = result {
-                        eprintln!("{}", 236); // Displaying the error code as 236 as per your request.
-                        // std::process::exit(-20);
+                    if let Err(_) = result {
+                        eprintln!("{}", 236);
                         return Err(-20);
 
                     }
@@ -410,11 +404,12 @@ fn run() -> Result<(), i32> {
                     print!("No filename provided for cat command!");
                 }
             },
+
             "mkdir" => {
                 if args.len() > 2 {
                     let dirnames = args[2..].to_vec();
                     let result = mkdir(dirnames);
-                    if let Err(exit_code) = result {
+                    if let Err(_) = result {
                         eprintln!("{}", 226);
 
                         return Err(-30);
@@ -423,6 +418,7 @@ fn run() -> Result<(), i32> {
                     println!("Directory name not provided for mkdir command!");
                 }
             },
+
             "mv" => {
                 if args.len() > 2 {
                     let result = mv(&args[2], &args[3]);
@@ -436,6 +432,7 @@ fn run() -> Result<(), i32> {
                 }
 
             },
+
             "ln" => {
                 if args.len() > 2 {
                     let symbolic = args.contains(&String::from("-s")) || args.contains(&String::from("--symbolic"));
@@ -456,8 +453,7 @@ fn run() -> Result<(), i32> {
                     let link_name = &args[start_index + 1];
 
                     let result = ln(symbolic, src_index, link_name);
-                    if let Err(exit_code) = result {
-                        // eprintln!("{}", 206);
+                    if let Err(_) = result {
                         return Err(-50);
                     }
                 } else {
@@ -479,6 +475,7 @@ fn run() -> Result<(), i32> {
                     return Err(-60);
                 }
             },
+
             "rm" => {
                 let recursive = args.contains(&String::from("-R")) || args.contains(&String::from("--recursive")) || args.contains(&String::from("-r"));
                 let dir = args.contains(&String::from("-d")) || args.contains(&String::from("--dir"));
@@ -486,7 +483,6 @@ fn run() -> Result<(), i32> {
                 let start_idx = 2 + recursive as usize + dir as usize;
 
                 if start_idx >= args.len() {
-                    // eprintln!("File name not provided for rm command!");
                     return Err(-1);
                 }
 
@@ -497,9 +493,13 @@ fn run() -> Result<(), i32> {
                     return Err(exit_code);
                 }
             },
+
             "ls" => {
-                let all = args.contains(&String::from("-a")) || args.contains(&String::from("-all"));
-                let recursive = args.contains(&String::from("-R")) || args.contains(&String::from("--recursive"));
+                let all = args.contains(&String::from("-a"))
+                    || args.contains(&String::from("-all"));
+                let recursive = args.contains(&String::from("-R"))
+                    || args.contains(&String::from("--recursive"))
+                    || args.contains(&String::from("-r"));
             
                 let mut path_idx = 2;
                 if all {
@@ -523,7 +523,7 @@ fn run() -> Result<(), i32> {
                     Path::new("/")
                 };
             
-                let result = ls(all, recursive, &path, &base, true);
+                let result = ls(all, recursive, &path, &base);
                 if let Err(exit_code) = result {
                     eprintln!("{}", 176);
                     return Err(exit_code);
@@ -534,8 +534,6 @@ fn run() -> Result<(), i32> {
                 let recursive = args.contains(&String::from("-R"))
                     || args.contains(&String::from("-r"))
                     || args.contains(&String::from("--recursive"));
-
-                
 
                 let start_index = 2 + recursive as usize;
 
@@ -552,9 +550,8 @@ fn run() -> Result<(), i32> {
                     eprintln!("result error: {}", 166);
                     return Err(exit_code);
                 }
-                
-                
             },
+
             "touch" => {
                 let a = args.contains(&String::from("-a"));
                 let no_creat = args.contains(&String::from("-c")) || args.contains(&String::from("--no-creat"));
@@ -573,12 +570,13 @@ fn run() -> Result<(), i32> {
                     return Err(exit_code);
                 }
             },
+
             "chmod" => {
                 // Validate flags for chmod
                 if args[2].starts_with("-") {
                     return Err(-1);
                 }
-                
+
                 if args.len() > 3 {
                     let result = chmod(&args[2], args[3].clone());
                     if let Err(exit_code) = result {
@@ -597,7 +595,6 @@ fn run() -> Result<(), i32> {
                 return Err(-1);
             },
         }
-
     } else {
         return Err(-1);
     }
