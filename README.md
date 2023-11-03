@@ -48,6 +48,36 @@ if it's a dir, but -r is false, irt calls the fs::remove_dir Rust function;
 
 If any error occures the err is set to true, and after checking all the names the error is returned; this is so it lets the other rms execute succesfully if one failed, but still return an error code;
 
+### ls
+
+Different behaviour for files and directories.
+If the target is a directory, checks for flags and prints the entries inside it according to whata was was required; more details about this in comments in the code;
+If the target is a file, print it's name.
+
+### cp
+
+If the source is a file, the copy is done by using fs::copy at the given destination;
+If the source is a dir, it has to be recursive. It copies the contents of the src dir: if it's a file using fs::copy, if it's a dir by calling cp() recursively.
+
+### touch
+
+If it doesn't exist and is allowed to create it, the function uses File::create to create the new file;
+In order to modify the access time of the file, it opens the file and reads from it;
+In order to change the last modify time of the file, it opens it and writes a space;
+If no_creat was set and the file doesn't exist, just return with no error code;
+
+### chmod
+
+Takes a string slice permission representing either numeric or symbolic permission modes, and a name as a String which is the path to the file or directory.
+
+The function checks if the permission string can be parsed as an octal number. If successful, it sets the file permissions to this numeric value using fs::set_permissions. 
+
+Handle symbolic permissions: If the permission string is not numeric, the function assumes it is symbolic. It retrieves the current metadata of the file and its mode.
+
+For each permission chunk, it finds the index of the operation character (+ or -). It then determines the entities (u for user, g for group, o for others, a for all) and the permissions (r, w, x) to be modified. For each permission character, it calculates a permission mask.
+
+It then applies the operation (+ to add permissions, - to remove them) to the current mode. After calculating the updated mode, the function applies it to the file or directory using fs::set_permissions. 
+
 ## Requirement
 
 https://upb-cs-rust.github.io/teme/rustybox.html

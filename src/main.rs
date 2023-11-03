@@ -137,7 +137,10 @@ fn ls(all: bool, recursive: bool, path: &Path, base_dir: &Path) -> Result<(), i3
 
         // for each file/dir inside the given directory
         for entry in fs::read_dir(path).map_err(|_| -80)? {
+            // get path of a file/dir inside the given directory
             let entry_path = entry.map_err(|_| -80)?.path();
+
+            //get its name
             let file_name = entry_path.file_name().unwrap().to_str().ok_or(-80)?;
 
             // Skip hidden files/directories if '-a' flag is not set
@@ -168,6 +171,7 @@ fn ls(all: bool, recursive: bool, path: &Path, base_dir: &Path) -> Result<(), i3
 }
 
 fn cp(recursive: bool, src: &str, dest: &str) -> Result<(), i32> {
+    // Convert the string name into a Path object
     let src_path = Path::new(src);
     let mut dest_path = PathBuf::from(dest);
     
@@ -203,11 +207,13 @@ fn cp(recursive: bool, src: &str, dest: &str) -> Result<(), i32> {
             }
         }
 
-        for entry in fs::read_dir(&src_path).map_err(|_| -90)? { // Read the contents of the directory
+        // Read the contents of the directory
+        for entry in fs::read_dir(&src_path).map_err(|_| -90)? {
             let entry = entry.map_err(|_| -90)?; // Unwrap the entry
             let entry_path = entry.path(); // Get the path of the entry
 
-            let dest_child_path = dest_path.join(entry_path.file_name().ok_or(-90)?); // Get the path of the child in the destination directory
+            // Get the path of the child in the destination directory
+            let dest_child_path = dest_path.join(entry_path.file_name().ok_or(-90)?);
 
             if entry_path.is_dir() {
                 // Recursively copy the subdirectory
@@ -229,7 +235,7 @@ fn cp(recursive: bool, src: &str, dest: &str) -> Result<(), i32> {
 }
 
 fn touch(a: bool, no_creat: bool, m: bool, name: String) -> Result<(), i32> {
-    // The path to the file
+    // Convert the string name into a Path object
     let path = Path::new(&name);
 
     // If the file exists, or we're allowed to create it
@@ -238,6 +244,7 @@ fn touch(a: bool, no_creat: bool, m: bool, name: String) -> Result<(), i32> {
         if path.exists() {
             edit_a_m = true;
         }
+
         // If the file doesn't exist, create it.
         if !path.exists() {
             if let Err(_) = File::create(&path) {
@@ -292,7 +299,9 @@ fn touch(a: bool, no_creat: bool, m: bool, name: String) -> Result<(), i32> {
 }
 
 fn chmod(permission: &str, name: String) -> Result<(), i32> {
+    // Convert the string name into a Path object
     let path = Path::new(&name);
+
     if !path.exists() {
         eprintln!("Path does not exist");
         return Err(-25);
@@ -301,29 +310,43 @@ fn chmod(permission: &str, name: String) -> Result<(), i32> {
     // Check if permission is numeric
     if let Ok(mode) = u32::from_str_radix(permission, 8) {
         fs::set_permissions(&path, fs::Permissions::from_mode(mode)).map_err(|_| -25)?;
-    } else {
-        // Symbolic permission
+    } else { // Symbolic permission
+        // Get the current permissions metadata for the path
         let current_metadata = fs::metadata(&path).map_err(|_| -25)?;
+        // Extract the current permission mode from the metadata
         let mut current_mode = current_metadata.permissions().mode();
 
+        // Split the permission string into parts separated by whitespace
         for chunk in permission.split_whitespace() {
             if chunk.len() < 3 {
-                return Err(-1);  // Return -1 for invalid format
+                return Err(-1);
             }
+
+            // Find the index of the operation character
             let operation_idx = chunk.find(|c| c == '+' || c == '-').unwrap_or(chunk.len());
+            
+            // Get the u, g, o, a from the chunk
             let entities = &chunk[..operation_idx];
+            
+            // Get the operation
             let operation = &chunk[operation_idx..operation_idx+1];
+            
+            // Get the permissions
             let perms = &chunk[operation_idx+1..];
         
+            // Iterate over each entity character
             for entity in entities.chars() {
                 for perm in perms.chars() {
+                    // Define a mask based on the character
+                    // 0o*** = read permissions for owner, group, and others
                     let mask = match perm {
-                        'r' => 0o444,
-                        'w' => 0o222,
-                        'x' => 0o111,
-                        _ => return Err(-1),  // Return -1 for invalid permission
+                        'r' => 0o444, // Read permission mask
+                        'w' => 0o222, // Write permission mask
+                        'x' => 0o111, // Execute permission mask
+                        _ => return Err(-1), // Invalid permission
                     };
 
+                    // Apply or remove the mask according to the entity and operation
                     match entity {
                         'u' => {
                             match operation {
@@ -359,7 +382,7 @@ fn chmod(permission: &str, name: String) -> Result<(), i32> {
             }
         }
 
-
+        // Apply the new permissions to the path
         fs::set_permissions(&path, fs::Permissions::from_mode(current_mode)).map_err(|_| -25)?;
     }
     Ok(())
@@ -441,7 +464,6 @@ fn run() -> Result<(), i32> {
                     let wrong = args.contains(&String::from("-a"));
 
                     if wrong {
-                        // println!("Invalid option for ln command!");
                         return Err(-1);
                     }
 
@@ -590,7 +612,7 @@ fn run() -> Result<(), i32> {
                         return Err(exit_code);
                     }
                 } else {
-                    return Err(-1);  // Return -1 for invalid number of args
+                    return Err(-1);
                 }
             },
             _ => {
