@@ -30,9 +30,11 @@ fn cat(filenames: Vec<String>) -> Result<(), i32> {
         let file = File::open(filename);
         match file {
             Ok(f) => {
+                // Read the content of the file
                 let reader = BufReader::new(f);
                 for line in reader.lines() {
                     match line {
+                        // Print the content of the file
                         Ok(l) => println!("{}", l),
                         Err(_) => return Err(-20),
                     }
@@ -83,41 +85,41 @@ fn rmdir(dirs_names: Vec<String>) -> Result<(), i32> {
 }
 
 fn rm(recursive: bool, dir: bool, names: Vec<String>) -> Result<(), i32> {
-    let mut errors = Vec::new();
-
+    let mut err: bool = false;
+    
     for name in names {
         let path = Path::new(&name);
 
         if !path.exists() {
-            errors.push(-70);
+            err = true;
             continue;
         }
 
         if path.is_file() {
             if let Err(_) = fs::remove_file(&path) {
-                errors.push(-70);
+                err = true;
             }
         } else if path.is_dir() {
             if recursive {
                 if let Err(_) = fs::remove_dir_all(&path) {
-                    errors.push(-70);
+                    err = true;
                 }
             } else if dir {
                 if let Err(_) = fs::remove_dir(&path) {
-                    errors.push(-70);
+                    err = true;
                 }
             } else {
                 // When neither `-d` nor `-r` is used for dirs
-                errors.push(-70);
+                err = true;
             }
         }
     }
 
-    if errors.is_empty() {
-        Ok(())
-    } else {
-        Err(-70)
+    if err {
+        return Err(-70);
     }
+
+    Ok(())
 }
 
 fn ls(all: bool, recursive: bool, path: &Path, base_dir: &Path) -> Result<(), i32> {
